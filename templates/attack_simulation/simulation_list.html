@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Attack Simulations{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h2><i class="fas fa-crosshairs me-2 text-primary"></i>Attack Simulations</h2>
+        <p>Test and evaluate SDN network vulnerabilities through controlled simulation</p>
+    </div>
+    {% if can_create %}
+    <a href="{% url 'attack_simulation:create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>New Simulation
+    </a>
+    {% endif %}
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-primary border-3">
+            <div class="fw-bold fs-3 text-primary">{{ total }}</div>
+            <div class="text-muted small">Total</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-success border-3">
+            <div class="fw-bold fs-3 text-success">{{ completed }}</div>
+            <div class="text-muted small">Completed</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-danger border-3">
+            <div class="fw-bold fs-3 text-danger">{{ successful }}</div>
+            <div class="text-muted small">Successful Attacks</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-warning border-3">
+            <div class="fw-bold fs-3 text-warning">{{ pending }}</div>
+            <div class="text-muted small">Pending</div>
+        </div>
+    </div>
+</div>
+
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Scenario Name</th>
+                    <th>Attack Type</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Success Rate</th>
+                    <th>Impact</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scenario in scenarios %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold small">{{ scenario.name }}</div>
+                        <div class="text-muted" style="font-size:0.72rem">
+                            by {{ scenario.created_by.username }} &bull; {{ scenario.created_at|date:"M d" }}
+                        </div>
+                    </td>
+                    <td class="small">{{ scenario.get_attack_type_display }}</td>
+                    <td>
+                        <span class="badge badge-{{ scenario.severity }}">
+                            {{ scenario.get_severity_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge rounded-pill
+                            {% if scenario.status == 'completed' %}bg-success
+                            {% elif scenario.status == 'running' %}bg-primary
+                            {% elif scenario.status == 'failed' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            {{ scenario.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if scenario.result %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:6px;min-width:60px">
+                                <div class="progress-bar
+                                    {% if scenario.result.success_probability >= 0.7 %}bg-danger
+                                    {% elif scenario.result.success_probability >= 0.4 %}bg-warning
+                                    {% else %}bg-success{% endif %}"
+                                    style="width:{{ scenario.result.success_probability|floatformat:2 }}00%">
+                                </div>
+                            </div>
+                            <span class="small fw-semibold">{{ scenario.result.success_probability }}</span>
+                        </div>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if scenario.result %}
+                        <span class="fw-bold
+                            {% if scenario.impact_score >= 8 %}text-danger
+                            {% elif scenario.impact_score >= 6 %}text-warning
+                            {% else %}text-success{% endif %}">
+                            {{ scenario.impact_score }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if scenario.status == 'pending' and can_run %}
+                            <a href="{% url 'attack_simulation:run' scenario.pk %}"
+                               class="btn btn-sm btn-success py-0 px-2">
+                                <i class="fas fa-play me-1"></i>Run
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'attack_simulation:result' scenario.pk %}"
+                               class="btn btn-sm btn-outline-primary py-0 px-2">
+                                <i class="fas fa-chart-bar me-1"></i>Results
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <i class="fas fa-crosshairs fa-3x text-muted mb-3 d-block"></i>
+                        <p class="text-muted">No simulations found.</p>
+                        {% if can_create %}
+                        <a href="{% url 'attack_simulation:create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create First Simulation
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

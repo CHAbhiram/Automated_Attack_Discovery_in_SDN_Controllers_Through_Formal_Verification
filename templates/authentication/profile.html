@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Profile</li>{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-user me-2 text-primary"></i>My Profile</h2>
+    <p>Manage your account information</p>
+</div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card p-4 text-center">
+            <div style="width:80px;height:80px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:2rem;color:white;font-weight:700;">
+                {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+            </div>
+            <h5 class="fw-bold">{{ user.get_full_name|default:user.username }}</h5>
+            <span class="badge bg-primary rounded-pill">{{ user.get_role_display }}</span>
+            <hr>
+            <div class="text-start">
+                <p class="small text-muted mb-1"><i class="fas fa-envelope me-2"></i>{{ user.email|default:'Not set' }}</p>
+                <p class="small text-muted mb-1"><i class="fas fa-building me-2"></i>{{ user.department|default:'Not set' }}</p>
+                <p class="small text-muted mb-0"><i class="fas fa-calendar me-2"></i>Joined: {{ user.date_joined|date:"M d, Y" }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">Account Details</h6>
+            <table class="table table-sm">
+                <tr><th class="text-muted" style="width:150px">Username</th><td>{{ user.username }}</td></tr>
+                <tr><th class="text-muted">Full Name</th><td>{{ user.get_full_name|default:'Not set' }}</td></tr>
+                <tr><th class="text-muted">Email</th><td>{{ user.email|default:'Not set' }}</td></tr>
+                <tr><th class="text-muted">Role</th><td><span class="badge bg-primary">{{ user.get_role_display }}</span></td></tr>
+                <tr><th class="text-muted">Department</th><td>{{ user.department|default:'Not set' }}</td></tr>
+                <tr><th class="text-muted">Last Login</th><td>{{ user.last_login|date:"M d, Y H:i"|default:'Never' }}</td></tr>
+                <tr><th class="text-muted">Last Login IP</th><td>{{ user.last_login_ip|default:'Unknown' }}</td></tr>
+                <tr><th class="text-muted">Status</th><td><span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">{% if user.is_active %}Active{% else %}Inactive{% endif %}</span></td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

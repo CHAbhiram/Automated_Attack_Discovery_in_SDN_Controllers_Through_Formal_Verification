@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Hosts{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Hosts</li>{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-desktop me-2 text-primary"></i>Network Hosts</h2>
+</div>
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Name</th><th>IP</th><th>MAC</th><th>Switch</th><th>OS</th><th>Port</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for host in hosts %}
+                <tr>
+                    <td class="fw-semibold">{{ host.name }}</td>
+                    <td><code>{{ host.ip_address }}</code></td>
+                    <td><code class="text-muted small">{{ host.mac_address }}</code></td>
+                    <td>{{ host.switch.name }}</td>
+                    <td>{{ host.os_type|default:'-' }}</td>
+                    <td>{{ host.port_number }}</td>
+                    <td>{% if host.is_malicious %}<span class="badge bg-danger">Malicious</span>{% else %}<span class="badge bg-success">Normal</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No hosts found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

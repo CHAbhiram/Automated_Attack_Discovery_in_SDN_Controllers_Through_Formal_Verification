@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Switches{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'network_model:topology' %}">Network</a></li><li class="breadcrumb-item active">Switches</li>{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-server me-2 text-primary"></i>Network Switches</h2>
+    <p>All SDN switches managed in your network</p>
+</div>
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Name</th><th>DPID</th><th>Controller</th><th>IP</th><th>OF Version</th><th>Hosts</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for sw in switches %}
+                <tr>
+                    <td class="fw-semibold">{{ sw.name }}</td>
+                    <td><code>{{ sw.dpid }}</code></td>
+                    <td>{{ sw.controller.name }}</td>
+                    <td>{{ sw.ip_address }}</td>
+                    <td><span class="badge bg-info text-dark">{{ sw.of_version }}</span></td>
+                    <td><span class="badge bg-light text-dark">{{ sw.hosts.count }}</span></td>
+                    <td><span class="badge {% if sw.status == 'active' %}bg-success{% elif sw.status == 'compromised' %}bg-danger{% else %}bg-secondary{% endif %}">{{ sw.status|title }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No switches found. Add them through the Admin Panel.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

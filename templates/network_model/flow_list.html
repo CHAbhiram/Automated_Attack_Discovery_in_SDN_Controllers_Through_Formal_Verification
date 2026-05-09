@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Communication Flows{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Flows</li>{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-exchange-alt me-2 text-primary"></i>Communication Flows</h2>
+</div>
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Src Port</th><th>Dst Port</th><th>Packets</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for flow in flows %}
+                <tr>
+                    <td>{{ flow.source_host.name }} <small class="text-muted">({{ flow.source_host.ip_address }})</small></td>
+                    <td>{{ flow.dest_host.name }} <small class="text-muted">({{ flow.dest_host.ip_address }})</small></td>
+                    <td><span class="badge bg-light text-dark">{{ flow.protocol }}</span></td>
+                    <td>{{ flow.src_port|default:'-' }}</td>
+                    <td>{{ flow.dst_port|default:'-' }}</td>
+                    <td>{{ flow.packet_count|default:0 }}</td>
+                    <td>{% if flow.is_suspicious %}<span class="badge bg-warning text-dark">Suspicious</span>{% else %}<span class="badge bg-success">Normal</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No flows recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

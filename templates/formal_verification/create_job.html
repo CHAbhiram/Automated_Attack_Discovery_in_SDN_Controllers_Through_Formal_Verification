@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Create Verification Job{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'formal_verification:dashboard' %}">Verification</a></li>
+<li class="breadcrumb-item active">New Job</li>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-play me-2 text-primary"></i>Create Verification Job</h2>
+    <p>Select rules and assertions to include in this verification run</p>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Job Name <span class="text-danger">*</span></label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Full Network Security Verification" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Target Controller</label>
+                    <select name="controller" class="form-select">
+                        <option value="">-- All Controllers --</option>
+                        {% for c in controllers %}<option value="{{ c.pk }}">{{ c.name }} ({{ c.ip_address }})</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea name="description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Select Verification Rules <span class="text-danger">*</span></label>
+                    {% if rules %}
+                    <div class="border rounded p-3" style="max-height:200px;overflow-y:auto;">
+                        {% for rule in rules %}
+                        <div class="form-check py-1 border-bottom">
+                            <input class="form-check-input" type="checkbox" name="rules" value="{{ rule.pk }}" id="rule_{{ rule.pk }}">
+                            <label class="form-check-label small" for="rule_{{ rule.pk }}">
+                                <strong>{{ rule.name }}</strong>
+                                <span class="badge badge-{{ rule.severity }} ms-1">{{ rule.get_rule_type_display }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning py-2 small">
+                        No rules available. <a href="{% url 'formal_verification:create_rule' %}">Create rules first</a>.
+                    </div>
+                    {% endif %}
+                </div>
+                {% if assertions %}
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Select Security Assertions (Optional)</label>
+                    <div class="border rounded p-3" style="max-height:160px;overflow-y:auto;">
+                        {% for assertion in assertions %}
+                        <div class="form-check py-1 border-bottom">
+                            <input class="form-check-input" type="checkbox" name="assertions" value="{{ assertion.pk }}" id="assert_{{ assertion.pk }}">
+                            <label class="form-check-label small" for="assert_{{ assertion.pk }}">
+                                <strong>{{ assertion.name }}</strong>
+                                <span class="badge bg-light text-dark ms-1">{{ assertion.get_assertion_type_display }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create Job</button>
+                    <a href="{% url 'formal_verification:job_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 bg-light border-0">
+            <h6 class="fw-bold mb-3"><i class="fas fa-info-circle text-primary me-2"></i>How Verification Works</h6>
+            <div class="small text-muted">
+                <p>The formal verification engine uses model-checking techniques to analyze network security properties:</p>
+                <ol class="ps-3">
+                    <li class="mb-1">Selected rules are encoded as formal properties</li>
+                    <li class="mb-1">The SDN network model is translated to a state machine</li>
+                    <li class="mb-1">Model checking explores all reachable states</li>
+                    <li class="mb-1">Violations produce counter-examples for analysis</li>
+                    <li>Verified properties confirm security guarantees</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

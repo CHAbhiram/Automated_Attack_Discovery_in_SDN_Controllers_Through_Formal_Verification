@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SDN Security Analysis{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --info: #0891b2;
+            --dark: #0f172a;
+            --sidebar-width: 260px;
+            --topbar-height: 64px;
+        }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #f1f5f9; color: #1e293b; }
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            background: linear-gradient(180deg, #0f172a 0%, #1e3a5f 100%);
+            z-index: 1000;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        .sidebar-brand {
+            padding: 20px 20px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand h5 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            margin: 0;
+        }
+        .sidebar-brand small { color: #94a3b8; font-size: 0.75rem; }
+        .sidebar-brand .brand-icon {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 8px;
+        }
+        .sidebar-nav { padding: 10px 0; }
+        .nav-section { padding: 10px 20px 5px; }
+        .nav-section-label {
+            color: #64748b;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        .sidebar .nav-link {
+            color: #94a3b8;
+            padding: 10px 20px;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            text-decoration: none;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background: rgba(255,255,255,0.07);
+            border-left-color: #2563eb;
+        }
+        .sidebar .nav-link i { width: 18px; text-align: center; font-size: 0.95rem; }
+        .sidebar .badge-count {
+            margin-left: auto;
+            background: #dc2626;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+        }
+        .topbar {
+            height: var(--topbar-height);
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .page-content { padding: 24px; }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+        .stat-card { border-radius: 12px; padding: 20px; color: white; position: relative; overflow: hidden; }
+        .stat-card .stat-icon {
+            width: 52px; height: 52px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+        }
+        .stat-card .stat-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .stat-card .stat-label { font-size: 0.8rem; opacity: 0.85; margin-top: 4px; }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            right: -20px; top: -20px;
+            width: 100px; height: 100px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        .bg-gradient-blue { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+        .bg-gradient-red { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .bg-gradient-green { background: linear-gradient(135deg, #16a34a, #22c55e); }
+        .bg-gradient-orange { background: linear-gradient(135deg, #d97706, #f59e0b); }
+        .bg-gradient-purple { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+        .bg-gradient-cyan { background: linear-gradient(135deg, #0891b2, #06b6d4); }
+        .badge-critical { background: #fee2e2; color: #dc2626; }
+        .badge-high { background: #ffedd5; color: #ea580c; }
+        .badge-medium { background: #fef3c7; color: #d97706; }
+        .badge-low { background: #dcfce7; color: #16a34a; }
+        .table th { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+        .table td { font-size: 0.875rem; vertical-align: middle; }
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+        .page-header { margin-bottom: 24px; }
+        .page-header h2 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; }
+        .page-header p { color: #64748b; margin: 4px 0 0; font-size: 0.875rem; }
+        .alert { border: none; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fas fa-shield-alt text-white"></i></div>
+        <h5>SDN Security</h5>
+        <small>Analysis System</small>
+    </div>
+
+    <div class="sidebar-nav">
+
+        <!-- MAIN -->
+        <div class="nav-section"><span class="nav-section-label">Main</span></div>
+        <a href="{% url 'dashboard:home' %}"
+           class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+
+        <!-- NETWORK -->
+        <div class="nav-section"><span class="nav-section-label">Network</span></div>
+        <a href="{% url 'network_model:topology' %}"
+           class="nav-link {% if request.resolver_match.app_name == 'network_model' %}active{% endif %}">
+            <i class="fas fa-project-diagram"></i> Network Topology
+        </a>
+        <a href="{% url 'network_model:switch_list' %}" class="nav-link">
+            <i class="fas fa-server"></i> Switches
+        </a>
+        <a href="{% url 'network_model:host_list' %}" class="nav-link">
+            <i class="fas fa-desktop"></i> Hosts
+        </a>
+        <a href="{% url 'network_model:flow_list' %}" class="nav-link">
+            <i class="fas fa-exchange-alt"></i> Flows
+        </a>
+
+        <!-- SECURITY ANALYSIS -->
+        <div class="nav-section"><span class="nav-section-label">Security Analysis</span></div>
+        <a href="{% url 'vulnerability_analysis:list' %}"
+           class="nav-link {% if request.resolver_match.app_name == 'vulnerability_analysis' %}active{% endif %}">
+            <i class="fas fa-bug"></i> Vulnerabilities
+        </a>
+        <a href="{% url 'vulnerability_analysis:attack_paths' %}" class="nav-link">
+            <i class="fas fa-route"></i> Attack Paths
+        </a>
+        <a href="{% url 'vulnerability_analysis:alerts' %}" class="nav-link">
+            <i class="fas fa-bell"></i> Security Alerts
+        </a>
+
+        <!-- SIMULATION — Viewer sees list only, no New Scenario -->
+        <div class="nav-section"><span class="nav-section-label">Simulation</span></div>
+        <a href="{% url 'attack_simulation:list' %}"
+           class="nav-link {% if request.resolver_match.app_name == 'attack_simulation' %}active{% endif %}">
+            <i class="fas fa-crosshairs"></i> View Simulations
+        </a>
+        {% if user.role == 'admin' or user.role == 'analyst' %}
+        <a href="{% url 'attack_simulation:create' %}" class="nav-link">
+            <i class="fas fa-plus-circle"></i> New Scenario
+        </a>
+        {% endif %}
+
+        <!-- REPORTS -->
+        <div class="nav-section"><span class="nav-section-label">Reports</span></div>
+        <a href="{% url 'reports:list' %}"
+           class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
+            <i class="fas fa-file-alt"></i> My Reports
+        </a>
+        <a href="{% url 'reports:generate' %}" class="nav-link">
+            <i class="fas fa-download"></i> Generate Report
+        </a>
+
+        <!-- ADMIN-ONLY SECTIONS -->
+        {% if user.role == 'admin' or user.is_superuser %}
+
+        <div class="nav-section"><span class="nav-section-label">Verification</span></div>
+        <a href="{% url 'formal_verification:dashboard' %}"
+           class="nav-link {% if request.resolver_match.app_name == 'formal_verification' %}active{% endif %}">
+            <i class="fas fa-check-double"></i> Verification
+        </a>
+        <a href="{% url 'formal_verification:rules' %}" class="nav-link">
+            <i class="fas fa-shield-alt"></i> Rules
+        </a>
+        <a href="{% url 'formal_verification:assertions' %}" class="nav-link">
+            <i class="fas fa-gavel"></i> Assertions
+        </a>
+        <a href="{% url 'formal_verification:job_list' %}" class="nav-link">
+            <i class="fas fa-tasks"></i> Jobs
+        </a>
+        <a href="{% url 'formal_verification:security_logs' %}" class="nav-link">
+            <i class="fas fa-history"></i> Security Logs
+        </a>
+
+        <div class="nav-section"><span class="nav-section-label">Admin</span></div>
+        <a href="{% url 'admin_panel:dashboard' %}"
+           class="nav-link {% if request.resolver_match.app_name == 'admin_panel' %}active{% endif %}">
+            <i class="fas fa-cog"></i> Admin Panel
+        </a>
+        <a href="{% url 'admin_panel:user_management' %}" class="nav-link">
+            <i class="fas fa-users-cog"></i> User Management
+        </a>
+        <a href="{% url 'admin_panel:network_config' %}" class="nav-link">
+            <i class="fas fa-network-wired"></i> Network Config
+        </a>
+        <a href="{% url 'admin_panel:openflow_settings' %}" class="nav-link">
+            <i class="fas fa-sliders-h"></i> OpenFlow Settings
+        </a>
+        <a href="{% url 'admin_panel:security_policies' %}" class="nav-link">
+            <i class="fas fa-shield-virus"></i> Security Policies
+        </a>
+        <a href="{% url 'admin_panel:system_monitoring' %}" class="nav-link">
+            <i class="fas fa-chart-line"></i> System Monitor
+        </a>
+
+        {% endif %}
+
+        <!-- ACCOUNT -->
+        <div class="nav-section"><span class="nav-section-label">Account</span></div>
+        <a href="{% url 'authentication:profile' %}" class="nav-link">
+            <i class="fas fa-user"></i> Profile
+        </a>
+        <a href="{% url 'authentication:logout' %}" class="nav-link">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="topbar">
+        <button class="btn btn-sm btn-light me-3 d-md-none" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="ms-auto d-flex align-items-center gap-3">
+
+            <!-- Notifications -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light position-relative" data-bs-toggle="dropdown">
+                    <i class="fas fa-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                          style="font-size:0.6rem">!</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-2" style="min-width:280px">
+                    <h6 class="dropdown-header">Notifications</h6>
+                    <a class="dropdown-item small rounded" href="{% url 'vulnerability_analysis:alerts' %}">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Check security alerts
+                    </a>
+                </div>
+            </div>
+
+            <!-- User Menu -->
+            <div class="dropdown">
+                <button class="btn btn-sm d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                    <div style="width:32px;height:32px;
+                        background:linear-gradient(135deg,
+                            {% if user.role == 'admin' %}#dc2626,#ef4444
+                            {% elif user.role == 'analyst' %}#2563eb,#3b82f6
+                            {% else %}#64748b,#94a3b8{% endif %});
+                        border-radius:8px;display:flex;align-items:center;
+                        justify-content:center;color:white;font-size:0.8rem;font-weight:600;">
+                        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                    </div>
+                    <div class="text-start d-none d-md-block">
+                        <div class="fw-semibold" style="font-size:0.8rem;line-height:1.2">
+                            {{ user.get_full_name|default:user.username }}
+                        </div>
+                        <div class="text-muted" style="font-size:0.7rem">
+                            {{ user.get_role_display }}
+                        </div>
+                    </div>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'authentication:profile' %}">
+                            <i class="fas fa-user me-2"></i>Profile
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="{% url 'authentication:logout' %}">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-content">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('show');
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

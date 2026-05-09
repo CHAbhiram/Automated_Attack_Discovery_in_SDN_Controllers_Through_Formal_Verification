@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Verification Rules{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'formal_verification:dashboard' %}">Verification</a></li>
+<li class="breadcrumb-item active">Rules</li>
+{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between">
+    <div>
+        <h2><i class="fas fa-shield-alt me-2 text-primary"></i>Verification Rules</h2>
+        <p>Formal security properties for SDN verification</p>
+    </div>
+    <a href="{% url 'formal_verification:create_rule' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add Rule</a>
+</div>
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>Scope</th><th>Expression</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for rule in rules %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold small">{{ rule.name }}</div>
+                        <div class="text-muted" style="font-size:0.72rem">{{ rule.description|truncatechars:50 }}</div>
+                    </td>
+                    <td><span class="badge bg-light text-dark small">{{ rule.get_rule_type_display }}</span></td>
+                    <td><span class="badge badge-{{ rule.severity }}">{{ rule.get_severity_display }}</span></td>
+                    <td class="small text-muted">
+                        {% if rule.controller %}{{ rule.controller.name }}{% endif %}
+                        {% if rule.switch %} / {{ rule.switch.name }}{% endif %}
+                        {% if not rule.controller and not rule.switch %}Network-wide{% endif %}
+                    </td>
+                    <td><code class="small text-muted">{{ rule.formal_expression|truncatechars:40 }}</code></td>
+                    <td>
+                        <span class="badge {% if rule.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if rule.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-5">No rules defined yet. <a href="{% url 'formal_verification:create_rule' %}">Create one</a>.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Security Assertions{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'formal_verification:dashboard' %}">Verification</a></li>
+<li class="breadcrumb-item active">Assertions</li>
+{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between">
+    <div><h2><i class="fas fa-gavel me-2 text-primary"></i>Security Assertions</h2></div>
+    <a href="{% url 'formal_verification:create_assertion' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add Assertion</a>
+</div>
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Name</th><th>Type</th><th>Expected</th><th>Logic</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for a in assertions %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold small">{{ a.name }}</div>
+                        <div class="text-muted" style="font-size:0.72rem">{{ a.description|truncatechars:60 }}</div>
+                    </td>
+                    <td><span class="badge bg-light text-dark small">{{ a.get_assertion_type_display }}</span></td>
+                    <td><span class="badge {% if a.expected_result == 'true' %}bg-success{% else %}bg-danger{% endif %}">{{ a.expected_result|upper }}</span></td>
+                    <td><code class="small">{{ a.assertion_logic|truncatechars:50 }}</code></td>
+                    <td><span class="badge {% if a.is_active %}bg-success{% else %}bg-secondary{% endif %}">{% if a.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-5">No assertions defined. <a href="{% url 'formal_verification:create_assertion' %}">Create one</a>.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

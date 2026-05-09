@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - SDN Security{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Dashboard</li>{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h2><i class="fas fa-tachometer-alt me-2 text-primary"></i>Security Dashboard</h2>
+        <p>Real-time overview of your SDN network security posture</p>
+    </div>
+    <div class="text-end">
+        <small class="text-muted"><i class="fas fa-clock me-1"></i>Last updated: just now</small>
+    </div>
+</div>
+
+<!-- Network Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-blue">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-server"></i></div>
+            </div>
+            <div class="stat-value">{{ total_controllers }}</div>
+            <div class="stat-label">SDN Controllers</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-purple">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-network-wired"></i></div>
+            </div>
+            <div class="stat-value">{{ total_switches }}</div>
+            <div class="stat-label">Network Switches</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-cyan">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-desktop"></i></div>
+            </div>
+            <div class="stat-value">{{ total_hosts }}</div>
+            <div class="stat-label">Connected Hosts</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-green">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
+            </div>
+            <div class="stat-value">{{ total_flows }}</div>
+            <div class="stat-label">Active Flows</div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-red">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-bug"></i></div>
+            </div>
+            <div class="stat-value">{{ total_vulns }}</div>
+            <div class="stat-label">Total Vulnerabilities</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-orange">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            </div>
+            <div class="stat-value">{{ critical_vulns }}</div>
+            <div class="stat-label">Critical Issues</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-blue">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-crosshairs"></i></div>
+            </div>
+            <div class="stat-value">{{ total_simulations }}</div>
+            <div class="stat-label">Simulations Run</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-red">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon"><i class="fas fa-bell"></i></div>
+            </div>
+            <div class="stat-value">{{ unresolved_alerts }}</div>
+            <div class="stat-label">Active Alerts</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Vulnerability Chart -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Vulnerability Breakdown</h6>
+                <a href="{% url 'vulnerability_analysis:list' %}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <canvas id="vulnChart" height="220"></canvas>
+        </div>
+    </div>
+    <!-- Recent Alerts -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0"><i class="fas fa-bell text-warning me-2"></i>Recent Alerts</h6>
+                <a href="{% url 'vulnerability_analysis:alerts' %}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            {% if recent_alerts %}
+            <div class="list-group list-group-flush">
+                {% for alert in recent_alerts %}
+                <div class="list-group-item px-0 py-2 border-0 border-bottom">
+                    <div class="d-flex align-items-start gap-2">
+                        <div class="mt-1">
+                            <span class="badge badge-{% if alert.severity == 'critical' %}critical{% elif alert.severity == 'high' %}high{% else %}medium{% endif %} rounded-pill" style="font-size:0.65rem;">{{ alert.get_severity_display }}</span>
+                        </div>
+                        <div>
+                            <div class="fw-semibold small">{{ alert.title }}</div>
+                            <div class="text-muted" style="font-size:0.75rem">{{ alert.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                <p class="small">No active alerts</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Recent Vulnerabilities -->
+    <div class="col-md-7">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0"><i class="fas fa-bug text-danger me-2"></i>Recent Vulnerabilities</h6>
+                <a href="{% url 'vulnerability_analysis:list' %}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>CVSS</th></tr></thead>
+                    <tbody>
+                        {% for v in recent_vulns %}
+                        <tr>
+                            <td><a href="{% url 'vulnerability_analysis:detail' v.pk %}" class="text-decoration-none fw-semibold small">{{ v.name|truncatechars:35 }}</a></td>
+                            <td><span class="text-muted small">{{ v.get_vuln_type_display }}</span></td>
+                            <td><span class="badge badge-{{ v.severity }}">{{ v.get_severity_display }}</span></td>
+                            <td><span class="fw-semibold {% if v.cvss_score >= 9 %}text-danger{% elif v.cvss_score >= 7 %}text-warning{% else %}text-success{% endif %}">{{ v.cvss_score }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted">No vulnerabilities found</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Recent Simulations -->
+    <div class="col-md-5">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0"><i class="fas fa-crosshairs text-primary me-2"></i>Recent Simulations</h6>
+                <a href="{% url 'attack_simulation:list' %}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            {% for sim in recent_simulations %}
+            <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+                <div class="flex-shrink-0">
+                    <span class="badge {% if sim.status == 'completed' %}bg-success{% elif sim.status == 'running' %}bg-warning{% elif sim.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %} rounded-pill" style="font-size:0.65rem;">{{ sim.status|title }}</span>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold small text-truncate">{{ sim.name }}</div>
+                    <div class="text-muted" style="font-size:0.72rem">{{ sim.get_attack_type_display }}</div>
+                </div>
+                <div>
+                    <a href="{% url 'attack_simulation:result' sim.pk %}" class="btn btn-xs btn-light btn-sm py-0 px-2" style="font-size:0.7rem;">View</a>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center small py-3">No simulations yet</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ctx = document.getElementById('vulnChart').getContext('2d');
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Critical', 'High', 'Medium', 'Low'],
+        datasets: [{
+            data: [{{ critical_vulns }}, {{ high_vulns }}, {{ medium_vulns }}, {{ low_vulns }}],
+            backgroundColor: ['#dc2626', '#ea580c', '#d97706', '#16a34a'],
+            borderWidth: 3,
+            borderColor: '#fff',
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+        },
+        cutout: '65%',
+    }
+});
+</script>
+{% endblock %}

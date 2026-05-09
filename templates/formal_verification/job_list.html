@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Verification Jobs{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'formal_verification:dashboard' %}">Verification</a></li>
+<li class="breadcrumb-item active">Jobs</li>
+{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between">
+    <div><h2><i class="fas fa-tasks me-2 text-primary"></i>Verification Jobs</h2></div>
+    {% if request.user.role == 'admin' %}
+    <a href="{% url 'formal_verification:create_job' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>New Job</a>
+    {% endif %}
+</div>
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Job Name</th><th>Controller</th><th>Properties</th><th>Results</th><th>Status</th><th>Initiated By</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold small">{{ job.name }}</div>
+                        <div class="text-muted" style="font-size:0.72rem">{{ job.created_at|date:"M d, Y H:i" }}</div>
+                    </td>
+                    <td class="small">{{ job.controller.name|default:'All' }}</td>
+                    <td><span class="badge bg-light text-dark">{{ job.total_properties }}</span></td>
+                    <td>
+                        <span class="text-success small fw-semibold">{{ job.verified_count }}✓</span>
+                        <span class="text-muted small mx-1">/</span>
+                        <span class="text-danger small fw-semibold">{{ job.violated_count }}✗</span>
+                    </td>
+                    <td>
+                        <span class="badge {% if job.status == 'completed' %}bg-success{% elif job.status == 'running' %}bg-warning text-dark{% elif job.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
+                            {{ job.status|title }}
+                        </span>
+                    </td>
+                    <td class="small text-muted">{{ job.initiated_by.username|default:'-' }}</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if job.status == 'pending' and request.user.role == 'admin' %}
+                            <a href="{% url 'formal_verification:run_job' job.pk %}" class="btn btn-sm btn-success py-0"><i class="fas fa-play me-1"></i>Run</a>
+                            {% endif %}
+                            <a href="{% url 'formal_verification:job_detail' job.pk %}" class="btn btn-sm btn-outline-primary py-0">Results</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-5">No verification jobs yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

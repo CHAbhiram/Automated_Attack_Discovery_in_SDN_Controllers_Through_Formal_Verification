@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Generate Report{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'reports:list' %}">Reports</a></li><li class="breadcrumb-item active">Generate</li>{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-download me-2 text-primary"></i>Generate Report</h2>
+</div>
+<div class="row">
+    <div class="col-md-7">
+        <div class="card p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="form-label fw-semibold mb-3">Select Report Type</label>
+                    <div class="row g-3">
+                        {% for val, label in report_types %}
+                        <div class="col-6">
+                            <label class="d-block cursor-pointer">
+                                <input type="radio" name="report_type" value="{{ val }}" class="d-none report-radio">
+                                <div class="card p-3 border-2 report-option text-center" style="cursor:pointer;transition:all .2s">
+                                    <i class="fas {% if val == 'full' %}fa-clipboard-list{% elif val == 'vulnerability' %}fa-bug{% elif val == 'simulation' %}fa-crosshairs{% else %}fa-project-diagram{% endif %} fa-2x mb-2 {% if val == 'full' %}text-primary{% elif val == 'vulnerability' %}text-danger{% elif val == 'simulation' %}text-warning{% else %}text-success{% endif %}"></i>
+                                    <div class="fw-semibold small">{{ label }}</div>
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2"><i class="fas fa-file-pdf me-2"></i>Generate PDF Report</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card p-4 bg-light border-0">
+            <h6 class="fw-bold mb-3">Report Contents</h6>
+            <div class="small text-muted">
+                <p><strong>Full Security Report:</strong> Complete vulnerability analysis, simulation results, network summary, and recommendations.</p>
+                <p><strong>Vulnerability Report:</strong> Detailed list of all vulnerabilities with CVSS scores and mitigations.</p>
+                <p><strong>Simulation Report:</strong> Results of all attack simulations with impact analysis.</p>
+                <p class="mb-0"><strong>Network Report:</strong> Topology overview with controllers, switches, and host configurations.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.report-radio').forEach(radio => {
+    radio.addEventListener('change', () => {
+        document.querySelectorAll('.report-option').forEach(el => {
+            el.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+        });
+        if (radio.checked) {
+            radio.nextElementSibling.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+        }
+    });
+});
+</script>
+{% endblock %}

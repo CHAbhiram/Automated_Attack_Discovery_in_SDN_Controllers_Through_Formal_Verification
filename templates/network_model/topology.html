@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+{% block title %}Network Topology{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Network Topology</li>{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet">
+<style>
+#topology-graph {
+    width: 100%;
+    height: 540px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0f172a 0%, #1a2744 100%);
+    border: 1px solid #1e3a5f;
+}
+
+.legend-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 6px 14px;
+}
+
+.legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.legend-diamond {
+    width: 14px;
+    height: 14px;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.legend-label {
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.topology-overlay {
+    position: relative;
+}
+
+.topology-overlay .legend-bar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Node tooltip custom */
+.vis-tooltip {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #2563eb !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 0.8rem !important;
+    font-family: 'Inter', sans-serif !important;
+    max-width: 220px !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-project-diagram me-2 text-primary"></i>SDN Network Topology</h2>
+    <p>Interactive visualization of your SDN architecture and communication flows</p>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-primary border-3">
+            <div class="fw-bold fs-3 text-primary">{{ total_controllers }}</div>
+            <div class="text-muted small fw-semibold">Controllers</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-3" style="border-color:#7c3aed !important">
+            <div class="fw-bold fs-3" style="color:#7c3aed">{{ total_switches }}</div>
+            <div class="text-muted small fw-semibold">Switches</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-success border-3">
+            <div class="fw-bold fs-3 text-success">{{ total_hosts }}</div>
+            <div class="text-muted small fw-semibold">Hosts</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-danger border-3">
+            <div class="fw-bold fs-3 text-danger">{{ compromised_nodes }}</div>
+            <div class="text-muted small fw-semibold">Compromised</div>
+        </div>
+    </div>
+</div>
+
+<!-- Topology Graph Card -->
+<div class="card p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h6 class="fw-bold mb-0"><i class="fas fa-broadcast-tower text-primary me-2"></i>Live Topology Graph</h6>
+
+        <!-- LEGEND — fully visible labels with colored indicators -->
+        <div class="d-flex gap-2 flex-wrap">
+            <div class="legend-box" style="background:rgba(37,99,235,0.15);border-color:rgba(37,99,235,0.4)">
+                <div class="legend-dot" style="background:#2563eb;border-color:#60a5fa"></div>
+                <span class="legend-label" style="color:#93c5fd">Controller</span>
+            </div>
+            <div class="legend-box" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4)">
+                <div class="legend-diamond" style="background:#7c3aed;border-color:#a78bfa"></div>
+                <span class="legend-label" style="color:#c4b5fd">Switch</span>
+            </div>
+            <div class="legend-box" style="background:rgba(22,163,74,0.15);border-color:rgba(22,163,74,0.4)">
+                <div class="legend-dot" style="background:#16a34a;border-color:#4ade80"></div>
+                <span class="legend-label" style="color:#86efac">Host</span>
+            </div>
+            <div class="legend-box" style="background:rgba(220,38,38,0.15);border-color:rgba(220,38,38,0.4)">
+                <div class="legend-dot" style="background:#dc2626;border-color:#f87171"></div>
+                <span class="legend-label" style="color:#fca5a5">Compromised</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="topology-graph"></div>
+
+    <!-- Graph controls hint -->
+    <div class="d-flex justify-content-between mt-2">
+        <small class="text-muted"><i class="fas fa-mouse me-1"></i>Scroll to zoom · Drag to pan · Click node for details</small>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="fitNetwork()" style="font-size:0.75rem">
+                <i class="fas fa-compress-arrows-alt me-1"></i>Fit View
+            </button>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="stabilizeNetwork()" style="font-size:0.75rem">
+                <i class="fas fa-sync me-1"></i>Stabilize
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Details Row -->
+<div class="row g-4">
+    <!-- Controllers -->
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <span style="display:inline-block;width:12px;height:12px;background:#2563eb;border-radius:3px;margin-right:8px;"></span>
+                Controllers
+            </h6>
+            {% for ctrl in controllers %}
+            <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+                <div style="width:38px;height:38px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-server" style="color:#fff;font-size:0.9rem"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small" style="color:#1e293b">{{ ctrl.name }}</div>
+                    <div style="font-size:0.72rem;color:#64748b">{{ ctrl.ip_address }} · {{ ctrl.controller_type }}</div>
+                </div>
+                <span class="badge rounded-pill {% if ctrl.status == 'active' %}bg-success{% elif ctrl.status == 'compromised' %}bg-danger{% else %}bg-secondary{% endif %}" style="font-size:0.65rem">
+                    {{ ctrl.status|title }}
+                </span>
+            </div>
+            {% empty %}
+            <p style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:12px 0">No controllers configured</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Switches -->
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <span style="display:inline-block;width:12px;height:12px;background:#7c3aed;transform:rotate(45deg);margin-right:8px;"></span>
+                Switches
+            </h6>
+            {% for sw in controllers %}
+            {% for switch in sw.switches.all %}
+            <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+                <div style="width:38px;height:38px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-network-wired" style="color:#fff;font-size:0.85rem"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small" style="color:#1e293b">{{ switch.name }}</div>
+                    <div style="font-size:0.72rem;color:#64748b">{{ switch.ip_address }} · OF {{ switch.of_version }}</div>
+                </div>
+                <span class="badge rounded-pill {% if switch.status == 'active' %}bg-success{% elif switch.status == 'compromised' %}bg-danger{% else %}bg-secondary{% endif %}" style="font-size:0.65rem">
+                    {{ switch.status|title }}
+                </span>
+            </div>
+            {% endfor %}
+            {% empty %}
+            <p style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:12px 0">No switches configured</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Flows -->
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i class="fas fa-exchange-alt me-2" style="color:#0891b2"></i>
+                <span style="color:#1e293b">Communication Flows</span>
+            </h6>
+            {% if flows %}
+            {% for flow in flows|slice:":8" %}
+            <div class="py-2 border-bottom">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span style="font-size:0.75rem;color:#1e293b;font-weight:600">{{ flow.source_host.ip_address }}</span>
+                    <i class="fas fa-arrow-right" style="font-size:0.6rem;color:#94a3b8"></i>
+                    <span style="font-size:0.75rem;color:#1e293b;font-weight:600">{{ flow.dest_host.ip_address }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                    <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:0.62rem">{{ flow.protocol }}</span>
+                    {% if flow.is_suspicious %}
+                    <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:0.62rem">Suspicious</span>
+                    {% else %}
+                    <span class="badge" style="background:#dcfce7;color:#16a34a;font-size:0.62rem">Normal</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% if flows.count > 8 %}
+            <a href="{% url 'network_model:flow_list' %}" style="font-size:0.78rem;color:#2563eb;text-decoration:none" class="d-block mt-2">
+                View all {{ flows.count }} flows →
+            </a>
+            {% endif %}
+            {% else %}
+            <p style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:12px 0">No flows recorded</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+<script>
+let network = null;
+
+fetch('/network/api/topology/')
+.then(r => r.json())
+.then(data => {
+    const nodes = new vis.DataSet(data.nodes.map(n => {
+        const isCompromised = n.malicious || n.status === 'compromised';
+
+        let nodeConfig = {};
+
+        if (n.type === 'controller') {
+            nodeConfig = {
+                shape: 'box',
+                size: 28,
+                color: {
+                    background: isCompromised ? '#dc2626' : '#2563eb',
+                    border: isCompromised ? '#991b1b' : '#1d4ed8',
+                    highlight: { background: isCompromised ? '#b91c1c' : '#1d4ed8', border: '#fff' },
+                    hover: { background: isCompromised ? '#b91c1c' : '#1e40af', border: '#fff' }
+                },
+                font: {
+                    color: '#ffffff',
+                    size: 12,
+                    face: 'Inter, sans-serif',
+                    bold: { color: '#ffffff', size: 12 }
+                },
+                borderWidth: 2,
+                borderWidthSelected: 3,
+                shadow: { enabled: true, color: 'rgba(37,99,235,0.5)', size: 8 }
+            };
+        } else if (n.type === 'switch') {
+            nodeConfig = {
+                shape: 'diamond',
+                size: 24,
+                color: {
+                    background: isCompromised ? '#dc2626' : '#7c3aed',
+                    border: isCompromised ? '#991b1b' : '#6d28d9',
+                    highlight: { background: isCompromised ? '#b91c1c' : '#6d28d9', border: '#fff' },
+                    hover: { background: isCompromised ? '#b91c1c' : '#5b21b6', border: '#fff' }
+                },
+                font: {
+                    color: '#ffffff',
+                    size: 11,
+                    face: 'Inter, sans-serif'
+                },
+                borderWidth: 2,
+                shadow: { enabled: true, color: 'rgba(124,58,237,0.5)', size: 6 }
+            };
+        } else {
+            nodeConfig = {
+                shape: 'dot',
+                size: 16,
+                color: {
+                    background: isCompromised ? '#dc2626' : '#16a34a',
+                    border: isCompromised ? '#991b1b' : '#15803d',
+                    highlight: { background: isCompromised ? '#b91c1c' : '#15803d', border: '#fff' },
+                    hover: { background: isCompromised ? '#b91c1c' : '#166534', border: '#fff' }
+                },
+                font: {
+                    color: '#ffffff',
+                    size: 10,
+                    face: 'Inter, sans-serif'
+                },
+                borderWidth: 2,
+                shadow: { enabled: true, color: isCompromised ? 'rgba(220,38,38,0.5)' : 'rgba(22,163,74,0.4)', size: 5 }
+            };
+        }
+
+        // Build clean label
+        const shortLabel = n.label.length > 10 ? n.label.substring(0, 10) : n.label;
+        const ipPart = n.ip ? '\n' + n.ip : '';
+
+        // Build tooltip
+        const typeLabel = n.type.charAt(0).toUpperCase() + n.type.slice(1);
+        const statusPart = n.status ? `<br><b>Status:</b> ${n.status}` : '';
+        const maliciousPart = n.malicious ? '<br><span style="color:#fca5a5">⚠ Malicious Host</span>' : '';
+
+        return {
+            id: n.id,
+            label: shortLabel + ipPart,
+            title: `<div style="padding:4px"><b>${n.label}</b><br><b>Type:</b> ${typeLabel}<br><b>IP:</b> ${n.ip || 'N/A'}${statusPart}${maliciousPart}</div>`,
+            ...nodeConfig
+        };
+    }));
+
+    const edges = new vis.DataSet(data.edges.map(e => {
+        let edgeConfig = {};
+        if (e.type === 'control') {
+            edgeConfig = {
+                color: { color: '#2563eb', highlight: '#60a5fa', hover: '#93c5fd' },
+                width: 2.5,
+                dashes: false,
+                title: 'Control Plane (OpenFlow)',
+            };
+        } else if (e.type === 'flow' && e.suspicious) {
+            edgeConfig = {
+                color: { color: '#dc2626', highlight: '#f87171', hover: '#fca5a5' },
+                width: 2,
+                dashes: [5, 5],
+                title: `Suspicious Flow — Protocol: ${e.protocol || 'Unknown'}`,
+            };
+        } else if (e.type === 'flow') {
+            edgeConfig = {
+                color: { color: '#0891b2', highlight: '#22d3ee', hover: '#67e8f9' },
+                width: 1.5,
+                dashes: [3, 3],
+                title: `Flow — Protocol: ${e.protocol || 'Unknown'}`,
+            };
+        } else {
+            edgeConfig = {
+                color: { color: '#475569', highlight: '#94a3b8', hover: '#cbd5e1' },
+                width: 1.5,
+                dashes: false,
+                title: 'Data Plane',
+            };
+        }
+
+        return {
+            from: e.from,
+            to: e.to,
+            arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+            smooth: { type: 'curvedCW', roundness: 0.1 },
+            ...edgeConfig
+        };
+    }));
+
+    const options = {
+        physics: {
+            enabled: true,
+            stabilization: { iterations: 150, updateInterval: 10 },
+            barnesHut: {
+                gravitationalConstant: -4000,
+                centralGravity: 0.3,
+                springLength: 120,
+                springConstant: 0.04,
+                damping: 0.2,
+            },
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 150,
+            hideEdgesOnDrag: false,
+            navigationButtons: false,
+            keyboard: false,
+        },
+        layout: {
+            improvedLayout: true,
+            randomSeed: 42,
+        },
+        nodes: {
+            margin: 6,
+        },
+        edges: {
+            selectionWidth: 3,
+        }
+    };
+
+    network = new vis.Network(
+        document.getElementById('topology-graph'),
+        { nodes, edges },
+        options
+    );
+
+    // Hide loading spinner after stabilization
+    network.on('stabilizationIterationsDone', function() {
+        network.setOptions({ physics: { enabled: false } });
+    });
+})
+.catch(err => {
+    document.getElementById('topology-graph').innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#64748b">
+            <i class="fas fa-project-diagram" style="font-size:3rem;margin-bottom:12px;color:#334155"></i>
+            <p style="margin:0;font-size:0.9rem">Could not load topology data</p>
+            <p style="margin:4px 0 0;font-size:0.75rem;color:#475569">Ensure network components are configured</p>
+        </div>`;
+});
+
+function fitNetwork() {
+    if (network) network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
+}
+
+function stabilizeNetwork() {
+    if (network) {
+        network.setOptions({ physics: { enabled: true } });
+        setTimeout(() => {
+            if (network) network.setOptions({ physics: { enabled: false } });
+        }, 2000);
+    }
+}
+</script>
+{% endblock %}

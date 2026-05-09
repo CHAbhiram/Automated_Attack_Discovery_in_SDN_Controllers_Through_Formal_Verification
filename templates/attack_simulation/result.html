@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% block title %}Simulation Result — {{ scenario.name }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h2><i class="fas fa-chart-bar me-2 text-primary"></i>{{ scenario.name }}</h2>
+        <p>{{ scenario.get_attack_type_display }} · Created by {{ scenario.created_by.username|default:'System' }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if scenario.status == 'pending' and can_run %}
+        <a href="{% url 'attack_simulation:run' scenario.pk %}" class="btn btn-success">
+            <i class="fas fa-play me-2"></i>Run Simulation
+        </a>
+        {% endif %}
+        <a href="{% url 'attack_simulation:list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+{% if scenario.status == 'pending' %}
+<div class="card p-5 text-center">
+    <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+    <h5>Simulation Pending</h5>
+    <p class="text-muted">This scenario has not been executed yet.</p>
+    {% if can_run %}
+    <a href="{% url 'attack_simulation:run' scenario.pk %}" class="btn btn-success px-4">
+        <i class="fas fa-play me-2"></i>Run Now
+    </a>
+    {% else %}
+    <p class="text-muted small">An admin needs to execute this simulation.</p>
+    {% endif %}
+</div>
+
+{% elif result %}
+<!-- Outcome Banner -->
+<div class="card mb-4 border-0 overflow-hidden">
+    <div style="background:{% if result.is_successful %}linear-gradient(135deg,#dc2626,#b91c1c){% else %}linear-gradient(135deg,#16a34a,#15803d){% endif %};padding:28px 32px">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div style="width:56px;height:56px;background:rgba(255,255,255,0.2);border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;font-size:1.6rem">
+                        {% if result.is_successful %}
+                        <i class="fas fa-skull-crossbones text-white"></i>
+                        {% else %}
+                        <i class="fas fa-shield-alt text-white"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h4 class="text-white fw-bold mb-0">
+                            {% if result.is_successful %}Attack Successful — Network Compromised{% else %}Attack Blocked — Defenses Held{% endif %}
+                        </h4>
+                        <p class="mb-0" style="color:rgba(255,255,255,0.8);font-size:0.85rem">
+                            Executed on {{ scenario.executed_at|date:"M d, Y H:i" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <span class="badge badge-{{ scenario.severity }} px-3 py-2 me-2" style="font-size:0.85rem">
+                    {{ scenario.get_severity_display }} Severity
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left: Scores -->
+    <div class="col-md-4">
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3">
+                <i class="fas fa-tachometer-alt text-primary me-2"></i>Scenario Scores
+            </h6>
+
+            <!-- Feasibility Score -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-semibold text-muted">Feasibility Score</span>
+                    <span class="fw-bold
+                        {% if scenario.feasibility_score >= 8 %}text-danger
+                        {% elif scenario.feasibility_score >= 6 %}text-warning
+                        {% else %}text-success{% endif %}">
+                        {{ scenario.feasibility_score }}/10
+                    </span>
+                </div>
+                <div class="progress mb-1" style="height:12px;border-radius:6px">
+                    <div class="progress-bar
+                        {% if scenario.feasibility_score >= 8 %}bg-danger
+                        {% elif scenario.feasibility_score >= 6 %}bg-warning
+                        {% else %}bg-success{% endif %}"
+                        style="width:{{ scenario.feasibility_score }}0%;border-radius:6px;transition:width 1s ease">
+                    </div>
+                </div>
+                <div class="small text-muted">How easily the attack can be executed</div>
+            </div>
+
+            <!-- Impact Score -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-semibold text-muted">Impact Score</span>
+                    <span class="fw-bold
+                        {% if scenario.impact_score >= 8 %}text-danger
+                        {% elif scenario.impact_score >= 6 %}text-warning
+                        {% else %}text-success{% endif %}">
+                        {{ scenario.impact_score }}/10
+                    </span>
+                </div>
+                <div class="progress mb-1" style="height:12px;border-radius:6px">
+                    <div class="progress-bar
+                        {% if scenario.impact_score >= 8 %}bg-danger
+                        {% elif scenario.impact_score >= 6 %}bg-warning
+                        {% else %}bg-success{% endif %}"
+                        style="width:{{ scenario.impact_score }}0%;border-radius:6px;transition:width 1s ease">
+                    </div>
+                </div>
+                <div class="small text-muted">Potential damage to the network</div>
+            </div>
+
+            <!-- Success Rate -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-semibold text-muted">Success Rate</span>
+                    <span class="fw-bold text-primary">{{ scenario.success_rate|floatformat:0 }}%</span>
+                </div>
+                <div class="progress mb-1" style="height:12px;border-radius:6px">
+                    <div class="progress-bar bg-primary"
+                        style="width:{{ scenario.success_rate|floatformat:0 }}%;border-radius:6px">
+                    </div>
+                </div>
+                <div class="small text-muted">Probability of exploit success</div>
+            </div>
+
+            <hr>
+
+            <!-- Packet Stats -->
+            <div class="row g-2 text-center">
+                <div class="col-6">
+                    <div class="bg-light rounded p-2">
+                        <div class="fw-bold text-primary">{{ result.packets_sent|default:0 }}</div>
+                        <div class="text-muted" style="font-size:0.7rem">Packets Sent</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="bg-light rounded p-2">
+                        <div class="fw-bold text-danger">{{ result.packets_dropped|default:0 }}</div>
+                        <div class="text-muted" style="font-size:0.7rem">Dropped</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="bg-light rounded p-2">
+                        <div class="fw-bold text-warning">{{ result.affected_flows }}</div>
+                        <div class="text-muted" style="font-size:0.7rem">Affected Flows</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="bg-light rounded p-2">
+                        <div class="fw-bold text-danger">{{ result.compromised_nodes|length }}</div>
+                        <div class="text-muted" style="font-size:0.7rem">Compromised</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Severity Badge Card -->
+        <div class="card p-4 text-center">
+            <div class="small text-muted fw-semibold mb-2">ATTACK SEVERITY</div>
+            <div class="display-6 fw-bold badge-{{ scenario.severity }} rounded p-3 d-inline-block">
+                {{ scenario.get_severity_display|upper }}
+            </div>
+            <div class="small text-muted mt-2">{{ scenario.get_attack_type_display }}</div>
+        </div>
+    </div>
+
+    <!-- Right: Details -->
+    <div class="col-md-8">
+        <!-- Attack Vector -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-2">
+                <i class="fas fa-route text-danger me-2"></i>Attack Vector
+            </h6>
+            <p class="text-muted mb-0">{{ result.attack_vector }}</p>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3">
+                <i class="fas fa-clock text-info me-2"></i>Attack Timeline
+            </h6>
+            <div class="position-relative ps-3" style="border-left:2px solid #e2e8f0">
+                {% for event in result.timeline %}
+                <div class="d-flex gap-3 mb-3 position-relative">
+                    <div style="width:10px;height:10px;border-radius:50%;
+                        background:{% if event.phase == 'setup' %}#2563eb{% elif event.phase == 'recon' %}#d97706{% elif event.phase == 'exploit' %}#dc2626{% else %}#7c3aed{% endif %};
+                        position:absolute;left:-16px;top:4px;border:2px solid white;"></div>
+                    <div class="flex-shrink-0">
+                        <span class="badge bg-light text-dark border" style="font-size:0.7rem;min-width:36px">
+                            {{ event.time }}
+                        </span>
+                    </div>
+                    <div class="small">
+                        <span class="fw-semibold">{{ event.event }}</span>
+                        <span class="badge ms-1
+                            {% if event.phase == 'setup' %}bg-primary
+                            {% elif event.phase == 'recon' %}bg-warning text-dark
+                            {% elif event.phase == 'exploit' %}bg-danger
+                            {% else %}bg-purple{% endif %}"
+                            style="font-size:0.6rem">
+                            {{ event.phase|upper }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i class="fas fa-shield-alt text-success me-2"></i>Security Recommendations
+            </h6>
+            {% for rec in result.recommendations %}
+            <div class="d-flex gap-3 mb-3 p-3 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0">
+                <div style="width:28px;height:28px;background:#16a34a;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <i class="fas fa-check text-white" style="font-size:0.7rem"></i>
+                </div>
+                <span class="small" style="color:#14532d">{{ rec }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="card p-5 text-center">
+    <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+    <p class="text-muted">No result available yet.</p>
+    {% if can_run %}
+    <a href="{% url 'attack_simulation:run' scenario.pk %}" class="btn btn-success">Run Simulation</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Security Logs{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'formal_verification:dashboard' %}">Verification</a></li>
+<li class="breadcrumb-item active">Security Logs</li>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-history me-2 text-primary"></i>Security Logs</h2>
+    <p>Comprehensive audit trail of all security events and system activities</p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card p-3 text-center"><div class="fw-bold fs-4 text-primary">{{ stats.total }}</div><div class="text-muted small">Total Logs</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3 text-center border-start border-danger border-3"><div class="fw-bold fs-4 text-danger">{{ stats.critical }}</div><div class="text-muted small">Critical</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3 text-center border-start border-warning border-3"><div class="fw-bold fs-4 text-warning">{{ stats.warning }}</div><div class="text-muted small">Warnings</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3 text-center border-start border-danger border-3"><div class="fw-bold fs-4 text-danger">{{ stats.error }}</div><div class="text-muted small">Errors</div></div></div>
+</div>
+
+<div class="card p-4">
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <select name="type" class="form-select form-select-sm">
+                <option value="">All Types</option>
+                {% for val, label in log_types %}
+                <option value="{{ val }}" {% if log_type == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="severity" class="form-select form-select-sm">
+                <option value="">All Severities</option>
+                <option value="info" {% if severity == 'info' %}selected{% endif %}>Info</option>
+                <option value="warning" {% if severity == 'warning' %}selected{% endif %}>Warning</option>
+                <option value="error" {% if severity == 'error' %}selected{% endif %}>Error</option>
+                <option value="critical" {% if severity == 'critical' %}selected{% endif %}>Critical</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search logs..." value="{{ search }}">
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i>Filter</button>
+                <a href="{% url 'formal_verification:security_logs' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Time</th><th>Severity</th><th>Type</th><th>Title</th><th>User</th><th>Component</th></tr></thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="small text-muted" style="white-space:nowrap">{{ log.created_at|date:"M d H:i" }}</td>
+                    <td>
+                        <span class="badge
+                            {% if log.severity == 'critical' %}bg-danger
+                            {% elif log.severity == 'error' %}bg-danger
+                            {% elif log.severity == 'warning' %}bg-warning text-dark
+                            {% else %}bg-info text-dark{% endif %}">
+                            {{ log.severity|upper }}
+                        </span>
+                    </td>
+                    <td><span class="badge bg-light text-dark small">{{ log.get_log_type_display }}</span></td>
+                    <td>
+                        <div class="fw-semibold small">{{ log.title }}</div>
+                        <div class="text-muted" style="font-size:0.72rem">{{ log.message|truncatechars:60 }}</div>
+                    </td>
+                    <td class="small text-muted">{{ log.user.username|default:'System' }}</td>
+                    <td class="small text-muted">{{ log.component|default:'-' }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-5">No security logs found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

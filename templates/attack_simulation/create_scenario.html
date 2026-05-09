@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}New Simulation{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'attack_simulation:list' %}">Simulations</a></li><li class="breadcrumb-item active">New</li>{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-plus-circle me-2 text-primary"></i>Create Attack Scenario</h2>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Scenario Name <span class="text-danger">*</span></label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. ARP Spoofing Test - Network A" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Attack Type <span class="text-danger">*</span></label>
+                    <select name="attack_type" class="form-select" required>
+                        <option value="">-- Select Attack Type --</option>
+                        {% for val, label in attack_types %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Severity Level</label>
+                    <select name="severity" class="form-select">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Target Controller</label>
+                        <select name="target_controller" class="form-select">
+                            <option value="">-- None --</option>
+                            {% for c in controllers %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Target Switch</label>
+                        <select name="target_switch" class="form-select">
+                            <option value="">-- None --</option>
+                            {% for s in switches %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Attacker Host</label>
+                        <select name="attacker_host" class="form-select">
+                            <option value="">-- None --</option>
+                            {% for h in hosts %}<option value="{{ h.pk }}">{{ h.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea name="description" class="form-control" rows="3" placeholder="Describe the attack scenario..."></textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create Scenario</button>
+                    <a href="{% url 'attack_simulation:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 bg-light border-0">
+            <h6 class="fw-bold mb-3"><i class="fas fa-info-circle text-primary me-2"></i>Attack Types Info</h6>
+            <div class="small text-muted">
+                <p><strong>ARP Spoofing:</strong> Attacker links their MAC to legitimate IP</p>
+                <p><strong>DoS Flood:</strong> Overwhelms controller with fake packet-in messages</p>
+                <p><strong>Topology Poisoning:</strong> Manipulates topology discovery via crafted LLDP</p>
+                <p><strong>Packet Injection:</strong> Injects malicious packets into the data plane</p>
+                <p><strong>Controller Saturation:</strong> Floods control channel causing service disruption</p>
+                <p><strong>Flow Table Overflow:</strong> Fills switch flow tables causing rule eviction</p>
+                <p class="mb-0"><strong>Man in the Middle:</strong> Intercepts traffic between hosts</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

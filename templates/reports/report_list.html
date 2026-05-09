@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Reports</li>{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between">
+    <div>
+        <h2><i class="fas fa-file-alt me-2 text-primary"></i>Security Reports</h2>
+        <p>Generated analysis and assessment reports</p>
+    </div>
+    <a href="{% url 'reports:generate' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Generate Report</a>
+</div>
+<div class="row g-3">
+    {% for report in reports %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:{% if report.report_type == 'full' %}linear-gradient(135deg,#2563eb,#7c3aed){% elif report.report_type == 'vulnerability' %}linear-gradient(135deg,#dc2626,#ef4444){% elif report.report_type == 'simulation' %}linear-gradient(135deg,#d97706,#f59e0b){% else %}linear-gradient(135deg,#16a34a,#22c55e){% endif %};border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold small">{{ report.title|truncatechars:40 }}</div>
+                    <div class="text-muted" style="font-size:0.72rem">{{ report.get_report_type_display }}</div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge {% if report.status == 'ready' %}bg-success{% elif report.status == 'generating' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ report.status|title }}</span>
+                <small class="text-muted">{{ report.created_at|date:"M d, Y" }}</small>
+            </div>
+            {% if report.summary %}<p class="text-muted small mb-3">{{ report.summary|truncatechars:100 }}</p>{% endif %}
+            <div class="mt-auto d-flex gap-2">
+                <a href="{% url 'reports:detail' report.pk %}" class="btn btn-sm btn-outline-primary flex-fill">View</a>
+                {% if report.status == 'ready' and report.file_path %}
+                <a href="{% url 'reports:download' report.pk %}" class="btn btn-sm btn-primary flex-fill"><i class="fas fa-download me-1"></i>PDF</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="card p-5 text-center"><i class="fas fa-file-alt fa-3x text-muted mb-3"></i><p class="text-muted">No reports yet. <a href="{% url 'reports:generate' %}">Generate your first report</a>.</p></div></div>
+    {% endfor %}
+</div>
+{% endblock %}

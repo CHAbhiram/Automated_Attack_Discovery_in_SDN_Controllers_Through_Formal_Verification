@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}Security Policies{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-shield-virus me-2 text-primary"></i>Security Policy Management</h2>
+    <p>Apply automated fixes and update security configurations at the controller level</p>
+</div>
+
+<!-- Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-danger border-3">
+            <div class="fw-bold fs-3 text-danger">{{ unpatched_vulns.count }}</div>
+            <div class="text-muted small">Unpatched Vulnerabilities</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-warning border-3">
+            <div class="fw-bold fs-3 text-warning">{{ alerts.count }}</div>
+            <div class="text-muted small">Active Alerts</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-success border-3">
+            <div class="fw-bold fs-3 text-success">{{ patched_count }}</div>
+            <div class="text-muted small">Patched</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 text-center border-start border-primary border-3">
+            <div class="fw-bold fs-3 text-primary">{{ automated_fixes }}</div>
+            <div class="text-muted small">Auto-Fixes Applied</div>
+        </div>
+    </div>
+</div>
+
+<!-- Automated Fix Panel -->
+<div class="card p-4 mb-4" style="border:2px solid #2563eb">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h6 class="fw-bold mb-1">
+                <i class="fas fa-magic text-primary me-2"></i>Automated Security Fix Engine
+            </h6>
+            <p class="text-muted small mb-0">
+                Apply recommended security configurations automatically at the controller level
+            </p>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="apply_all_fixes">
+            <button type="submit" class="btn btn-primary"
+                onclick="return confirm('Apply all automated fixes to controller? This will update flow rules and security policies.')">
+                <i class="fas fa-magic me-2"></i>Apply All Automated Fixes
+            </button>
+        </form>
+    </div>
+    <div class="row g-3">
+        {% for fix in automated_fix_list %}
+        <div class="col-md-6">
+            <div class="border rounded p-3 d-flex gap-3 align-items-start
+                {% if fix.applied %}" style="background:#f0fdf4;border-color:#bbf7d0 !important"
+                {% else %}" style="background:#f8fafc"{% endif %}>
+                <div style="width:36px;height:36px;flex-shrink:0;border-radius:9px;
+                    background:{% if fix.applied %}#16a34a{% else %}#2563eb{% endif %};
+                    display:flex;align-items:center;justify-content:center;color:white">
+                    <i class="fas {% if fix.applied %}fa-check{% else %}fa-cog{% endif %}"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small">{{ fix.name }}</div>
+                    <div class="text-muted" style="font-size:0.72rem">{{ fix.description }}</div>
+                    <div class="mt-1">
+                        {% if fix.applied %}
+                        <span class="badge bg-success" style="font-size:0.65rem">
+                            <i class="fas fa-check me-1"></i>Applied
+                        </span>
+                        {% else %}
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="apply_fix">
+                            <input type="hidden" name="fix_key" value="{{ fix.key }}">
+                            <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.72rem">
+                                Apply Fix
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Unpatched Vulnerabilities -->
+    <div class="col-md-7">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="fas fa-bug text-danger me-2"></i>
+                    Unpatched Vulnerabilities ({{ unpatched_vulns.count }})
+                </h6>
+                {% if unpatched_vulns %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="patch_all">
+                    <button type="submit" class="btn btn-sm btn-success py-0"
+                        onclick="return confirm('Mark all vulnerabilities as patched?')">
+                        <i class="fas fa-check-double me-1"></i>Patch All
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% for v in unpatched_vulns %}
+            <div class="border rounded p-3 mb-2">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold small">{{ v.name }}</div>
+                        <div style="font-size:0.72rem;color:#64748b">{{ v.affected_component }}</div>
+                    </div>
+                    <div class="d-flex gap-1 align-items-center ms-2">
+                        <span class="badge badge-{{ v.severity }}">{{ v.get_severity_display }}</span>
+                        <span class="badge bg-light text-dark border" style="font-size:0.65rem">
+                            CVSS {{ v.cvss_score }}
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted small flex-grow-1 me-2">
+                        <i class="fas fa-shield-alt text-success me-1"></i>
+                        {{ v.mitigation|truncatechars:60 }}
+                    </div>
+                    <form method="post" class="d-inline flex-shrink-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="patch_vuln">
+                        <input type="hidden" name="patch_vuln" value="{{ v.pk }}">
+                        <button type="submit" class="btn btn-sm btn-success py-0 px-2">
+                            <i class="fas fa-check me-1"></i>Mark Patched
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
+                <p class="text-success fw-semibold">All vulnerabilities patched!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i class="fas fa-bell text-warning me-2"></i>
+                Active Alerts ({{ alerts.count }})
+            </h6>
+            {% for alert in alerts %}
+            <div class="border rounded p-3 mb-2"
+                style="border-left:3px solid
+                {% if alert.severity == 'critical' %}#dc2626
+                {% elif alert.severity == 'high' %}#d97706
+                {% else %}#0891b2{% endif %} !important">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="fw-semibold small">{{ alert.title }}</div>
+                    <span class="badge badge-{{ alert.severity }}" style="font-size:0.62rem">
+                        {{ alert.get_severity_display }}
+                    </span>
+                </div>
+                <div class="text-muted" style="font-size:0.72rem;margin-bottom:6px">
+                    {{ alert.message|truncatechars:80 }}
+                </div>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="resolve_alert">
+                    <input type="hidden" name="resolve_alert" value="{{ alert.pk }}">
+                    <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2"
+                        style="font-size:0.72rem">
+                        <i class="fas fa-times me-1"></i>Resolve
+                    </button>
+                </form>
+            </div>
+            {% empty %}
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
+                <p class="text-success fw-semibold">No active alerts!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

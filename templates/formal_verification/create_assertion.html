@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Create Security Assertion{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'formal_verification:dashboard' %}">Verification</a></li>
+<li class="breadcrumb-item active">Create Assertion</li>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-gavel me-2 text-primary"></i>Create Security Assertion</h2>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Assertion Name <span class="text-danger">*</span></label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. No unauthorized controller access" required>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Assertion Type</label>
+                        <select name="assertion_type" class="form-select">
+                            {% for val, label in assertion_types %}
+                            <option value="{{ val }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Expected Result</label>
+                        <select name="expected_result" class="form-select">
+                            <option value="true">True (Should Hold)</option>
+                            <option value="false">False (Should Not Hold)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea name="description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Assertion Logic <span class="text-danger">*</span></label>
+                    <textarea name="assertion_logic" class="form-control font-monospace" rows="4"
+                        placeholder="e.g. assert(∀ pkt: pkt.dst == controller → pkt.src ∈ authorized_switches)" required></textarea>
+                    <div class="form-text">Write the formal assertion in predicate logic or temporal logic</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create Assertion</button>
+                    <a href="{% url 'formal_verification:assertions' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 bg-light border-0">
+            <h6 class="fw-bold mb-3">Assertion Types</h6>
+            <div class="small text-muted">
+                <p><strong>Invariant:</strong> Properties that must always hold</p>
+                <p><strong>Safety:</strong> Nothing bad ever happens</p>
+                <p><strong>Liveness:</strong> Something good eventually happens</p>
+                <p><strong>Isolation:</strong> Segments remain separate</p>
+                <p class="mb-0"><strong>Authentication:</strong> Only authorized entities communicate</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
